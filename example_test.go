@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"log"
 
@@ -34,8 +35,10 @@ func Example() {
 	// Output:
 	// step: _init / done
 	// exec: debit
+	// Foo 50 -> 40
 	// step: debit / done
 	// exec: credit
+	// Bar 50 -> 60
 	// step: credit / done
 	// mark saga as done
 	// delete saga
@@ -50,10 +53,10 @@ func debitAction(ctx context.Context, cmd json.RawMessage) Result {
 
 	switch req.Debiter {
 	case "foo":
-		log.Printf("Foo %v -> %v\n", foo, foo-req.Amount)
+		fmt.Printf("Foo %v -> %v\n", foo, foo-req.Amount)
 		foo = foo - req.Amount
 	case "bar":
-		log.Printf("Bar %v -> %v\n", bar, bar-req.Amount)
+		fmt.Printf("Bar %v -> %v\n", bar, bar-req.Amount)
 		bar = bar - req.Amount
 	default:
 		return Failure(errors.New("unknown target"))
@@ -71,16 +74,16 @@ func debitCompensation(ctx context.Context, cmd json.RawMessage) Result {
 
 	switch req.Debiter {
 	case "foo":
-		log.Printf("Revert Foo %v -> %v\n", foo, foo+req.Amount)
+		fmt.Printf("Revert Foo %v -> %v\n", foo, foo+req.Amount)
 		foo = foo + req.Amount
 	case "bar":
-		log.Printf("Revert Bar %v -> %v\n", bar, bar+req.Amount)
+		fmt.Printf("Revert Bar %v -> %v\n", bar, bar+req.Amount)
 		bar = bar + req.Amount
 	default:
 		return Failure(errors.New("unknown target"))
 	}
 
-	return Success(cmd)
+	return Success(nil)
 }
 
 func creditAction(ctx context.Context, cmd json.RawMessage) Result {
@@ -92,10 +95,10 @@ func creditAction(ctx context.Context, cmd json.RawMessage) Result {
 
 	switch req.Crediter {
 	case "foo":
-		log.Printf("Foo %v -> %v\n", foo, foo+req.Amount)
+		fmt.Printf("Foo %v -> %v\n", foo, foo+req.Amount)
 		foo = foo + req.Amount
 	case "bar":
-		log.Printf("Bar %v -> %v\n", bar, bar+req.Amount)
+		fmt.Printf("Bar %v -> %v\n", bar, bar+req.Amount)
 		bar = bar + req.Amount
 	default:
 		return Failure(errors.New("unknown target"))
