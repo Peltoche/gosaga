@@ -383,3 +383,114 @@ func Test_Journal_DeleteSaga_success(t *testing.T) {
 
 	storageMock.AssertExpectations(t)
 }
+
+func Test_Journal_MarkSubRequestAsAborted_success(t *testing.T) {
+	storageMock := new(storage.Mock)
+	journal := New(storageMock)
+	journal.generateID = func() string { return "some-saga-id" }
+
+	cmd := json.RawMessage(`{"key": "value"}`)
+
+	// Initialize the saga
+	storageMock.On("SaveEventLog", &model.EventLog{SagaID: "some-saga-id", Step: "_init", State: "done", Arg: cmd}).Once().Return(nil)
+	sagaID, err := journal.CreateNewSaga(context.Background(), cmd)
+	require.NoError(t, err)
+
+	// Mark the subrequest as running
+	storageMock.On("SaveEventLog", &model.EventLog{SagaID: "some-saga-id", Step: "some-subrequest-id", State: "running", Arg: cmd}).Once().Return(nil)
+	err = journal.MarkSubRequestAsRunning(context.Background(), sagaID, "some-subrequest-id", cmd)
+
+	// Mark the subrequest as aborted
+	storageMock.On("SaveEventLog", &model.EventLog{SagaID: "some-saga-id", Step: "some-subrequest-id", State: "aborted", Arg: cmd}).Once().Return(nil)
+	err = journal.MarkSubRequestAsAborted(context.Background(), sagaID, "some-subrequest-id", cmd)
+
+	assert.NoError(t, err)
+
+	storageMock.AssertExpectations(t)
+}
+
+func Test_Journal_MarkSubRequestAsAborted_with_storage_error(t *testing.T) {
+	storageMock := new(storage.Mock)
+	journal := New(storageMock)
+	journal.generateID = func() string { return "some-saga-id" }
+
+	cmd := json.RawMessage(`{"key": "value"}`)
+
+	// Initialize the saga
+	storageMock.On("SaveEventLog", &model.EventLog{SagaID: "some-saga-id", Step: "_init", State: "done", Arg: cmd}).Once().Return(nil)
+	sagaID, err := journal.CreateNewSaga(context.Background(), cmd)
+	require.NoError(t, err)
+
+	// Mark the subrequest as running
+	storageMock.On("SaveEventLog", &model.EventLog{SagaID: "some-saga-id", Step: "some-subrequest-id", State: "running", Arg: cmd}).Once().Return(nil)
+	err = journal.MarkSubRequestAsRunning(context.Background(), sagaID, "some-subrequest-id", cmd)
+
+	// Mark the subrequest as aborted
+	storageMock.On("SaveEventLog", &model.EventLog{SagaID: "some-saga-id", Step: "some-subrequest-id", State: "aborted", Arg: cmd}).Once().Return(errors.New("some-error"))
+	err = journal.MarkSubRequestAsAborted(context.Background(), sagaID, "some-subrequest-id", cmd)
+
+	assert.EqualError(t, err, "failed to save into the storage: some-error")
+
+	storageMock.AssertExpectations(t)
+}
+
+func Test_Journal_MarkSubRequestAsAborted_with_an_unknown_saga(t *testing.T) {
+	storageMock := new(storage.Mock)
+	journal := New(storageMock)
+	journal.generateID = func() string { return "some-saga-id" }
+
+	cmd := json.RawMessage(`{"key": "value"}`)
+
+	err := journal.MarkSubRequestAsAborted(context.Background(), "some-unknown-saga-id", "some-subrequest-id", cmd)
+
+	assert.EqualError(t, err, "saga \"some-unknown-saga-id\" not found into the journal")
+
+	storageMock.AssertExpectations(t)
+}
+
+func Test_Journal_MarkSubRequestAsAborted_with_the_subrequest_not_in_running_state(t *testing.T) {
+	storageMock := new(storage.Mock)
+	journal := New(storageMock)
+	journal.generateID = func() string { return "some-saga-id" }
+
+	cmd := json.RawMessage(`{"key": "value"}`)
+
+	// Initialize the saga
+	storageMock.On("SaveEventLog", &model.EventLog{SagaID: "some-saga-id", Step: "_init", State: "done", Arg: cmd}).Once().Return(nil)
+	sagaID, err := journal.CreateNewSaga(context.Background(), cmd)
+	require.NoError(t, err)
+
+	// Mark the subrequest as running
+	storageMock.On("SaveEventLog", &model.EventLog{SagaID: "some-saga-id", Step: "some-subrequest-id", State: "running", Arg: cmd}).Once().Return(nil)
+	err = journal.MarkSubRequestAsRunning(context.Background(), sagaID, "some-subrequest-id", cmd)
+
+	// Mark the subrequest as done
+	storageMock.On("SaveEventLog", &model.EventLog{SagaID: "some-saga-id", Step: "some-subrequest-id", State: "done", Arg: cmd}).Once().Return(nil)
+	err = journal.MarkSubRequestAsDone(context.Background(), sagaID, "some-subrequest-id", cmd)
+	require.NoError(t, err)
+
+	// Mark the subrequest as aborted. It should fail as the subrequest is in not in the "running" State.
+	err = journal.MarkSubRequestAsAborted(context.Background(), sagaID, "some-subrequest-id", cmd)
+	assert.EqualError(t, err, `expected current state to be "running", have "done"`)
+
+	storageMock.AssertExpectations(t)
+}
+
+func Test_Journal_MarkSubRequestAsAborted_with_not_subrequest_previous_state(t *testing.T) {
+	storageMock := new(storage.Mock)
+	journal := New(storageMock)
+	journal.generateID = func() string { return "some-saga-id" }
+
+	cmd := json.RawMessage(`{"key": "value"}`)
+
+	// Initialize the saga
+	storageMock.On("SaveEventLog", &model.EventLog{SagaID: "some-saga-id", Step: "_init", State: "done", Arg: cmd}).Once().Return(nil)
+	sagaID, err := journal.CreateNewSaga(context.Background(), cmd)
+	require.NoError(t, err)
+
+	// Mark the subrequest as done without calling the MarkSubRequestAsRunning before.
+	err = journal.MarkSubRequestAsAborted(context.Background(), sagaID, "some-subrequest-id", cmd)
+	assert.EqualError(t, err, "expected current state to be \"running\", have not previous state")
+
+	storageMock.AssertExpectations(t)
+}

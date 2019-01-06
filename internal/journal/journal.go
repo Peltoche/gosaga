@@ -108,6 +108,42 @@ func (t *Journal) MarkSubRequestAsDone(ctx context.Context, sagaID string, subRe
 	return nil
 }
 
+// MarkSubRequestAsAborted make the given Sub-Request and saga as aborted for the given Saga.
+func (t *Journal) MarkSubRequestAsAborted(ctx context.Context, sagaID string, subRequestID string, reason json.RawMessage) error {
+	saga, ok := t.journal[sagaID]
+	if !ok {
+		return fmt.Errorf("saga %q not found into the journal", sagaID)
+	}
+
+	subRequestCurrentStep := ""
+	for _, eventLog := range saga.EventLogs {
+		if strings.HasPrefix(eventLog.Step, subRequestID) {
+			subRequestCurrentStep = eventLog.State
+		}
+	}
+
+	if subRequestCurrentStep == "" {
+		return errors.New("expected current state to be \"running\", have not previous state")
+	}
+
+	if subRequestCurrentStep != "running" {
+		return fmt.Errorf("expected current state to be \"running\", have %q", subRequestCurrentStep)
+	}
+
+	eventLog := model.EventLog{SagaID: sagaID, Step: subRequestID, State: "aborted", Arg: reason}
+	err := t.storage.SaveEventLog(ctx, &eventLog)
+	if err != nil {
+		return fmt.Errorf("failed to save into the storage: %s", err)
+	}
+
+	saga.Status = "aborted"
+	saga.EventLogs = append(saga.EventLogs, eventLog)
+
+	t.journal[sagaID] = saga
+
+	return nil
+}
+
 // MarkSagaAsDone mark the given Saga a done.
 func (t *Journal) MarkSagaAsDone(ctx context.Context, sagaID string) error {
 	saga, ok := t.journal[sagaID]
