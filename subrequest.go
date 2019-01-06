@@ -9,6 +9,7 @@ import (
 // Result returned at the end of an Action.
 type Result interface {
 	IsSuccess() bool
+	Arg() json.RawMessage
 }
 
 // Action used for a SubRequest Action or Compensation.

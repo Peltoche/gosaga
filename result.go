@@ -1,6 +1,9 @@
 package gosaga
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // SuccessResponse response returned after a successful Action.
 //
@@ -21,6 +24,9 @@ type SuccessResponse struct {
 // IsSuccess return if the action have be successful.
 func (t *SuccessResponse) IsSuccess() bool { return true }
 
+// Arg return the argument for the next SubRequest.
+func (t *SuccessResponse) Arg() json.RawMessage { return t.result }
+
 // FailureResponse response returned after a errored Action.
 //
 // - When it is used as a result for an Action, it change the saga state to
@@ -36,6 +42,9 @@ type FailureResponse struct {
 
 // IsSuccess return if the action have be successful.
 func (t *FailureResponse) IsSuccess() bool { return false }
+
+// Arg return the error in a json format.
+func (t *FailureResponse) Arg() json.RawMessage { return json.RawMessage(fmt.Sprintf("%q", t.err)) }
 
 // Success generate a Success response.
 func Success(result json.RawMessage) *SuccessResponse {
