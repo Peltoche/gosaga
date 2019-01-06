@@ -119,7 +119,7 @@ func (t *SEC) execNextSubRequestAction(ctx context.Context, sagaID string) error
 
 	result := subReq.Action(ctx, arg)
 	if result.IsSuccess() {
-		err = t.journal.MarkSubRequestAsDone(ctx, sagaID, subReq.SubRequestID, arg)
+		err = t.journal.MarkSubRequestAsDone(ctx, sagaID, subReq.SubRequestID, result.Arg())
 		if err != nil {
 			return fmt.Errorf("failed to create the saga: %s", err)
 		}
