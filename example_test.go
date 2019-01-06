@@ -44,8 +44,8 @@ func debitAction(ctx context.Context, cmd json.RawMessage) Result {
 		return Failure(err)
 	}
 
-	foo = foo - req.Amount
 	fmt.Printf("Foo %v -> %v\n", foo, foo-req.Amount)
+	foo = foo - req.Amount
 
 	return Success(cmd)
 }
@@ -60,8 +60,8 @@ func debitCompensation(ctx context.Context, cmd json.RawMessage) Result {
 		return Failure(err)
 	}
 
-	foo = foo + req.Amount
 	fmt.Printf("Revert Foo %v -> %v\n", foo, foo+req.Amount)
+	foo = foo + req.Amount
 
 	return Success(nil)
 }
@@ -73,8 +73,8 @@ func creditAction(ctx context.Context, cmd json.RawMessage) Result {
 		return Failure(err)
 	}
 
-	bar = bar + req.Amount
 	fmt.Printf("Bar %v -> %v\n", bar, bar+req.Amount)
+	bar = bar + req.Amount
 
 	return Success(cmd)
 }
@@ -89,8 +89,8 @@ func creditCompensation(ctx context.Context, cmd json.RawMessage) Result {
 		return Failure(err)
 	}
 
-	bar = bar - req.Amount
 	log.Printf("Revert Bar %v -> %v\n", bar, bar+req.Amount)
+	bar = bar - req.Amount
 
 	return Success(cmd)
 }
