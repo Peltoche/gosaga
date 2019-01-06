@@ -26,11 +26,11 @@ func Test_Mock_CreateNewSaga(t *testing.T) {
 func Test_Mock_MarkSubRequestAsRunning(t *testing.T) {
 	mock := new(Mock)
 
-	cmd := json.RawMessage(`{"key": "value"}`)
+	result := json.RawMessage(`{"key": "value"}`)
 
-	mock.On("MarkSubRequestAsRunning", "some-saga-id", "some-subrequest-id", cmd).Once().Return(nil)
+	mock.On("MarkSubRequestAsRunning", "some-saga-id", "some-subrequest-id", result).Once().Return(nil)
 
-	err := mock.MarkSubRequestAsRunning(context.Background(), "some-saga-id", "some-subrequest-id", cmd)
+	err := mock.MarkSubRequestAsRunning(context.Background(), "some-saga-id", "some-subrequest-id", result)
 
 	assert.NoError(t, err)
 
@@ -45,6 +45,20 @@ func Test_Mock_MarkSubRequestAsDone(t *testing.T) {
 	mock.On("MarkSubRequestAsDone", "some-saga-id", "some-subrequest-id", cmd).Once().Return(nil)
 
 	err := mock.MarkSubRequestAsDone(context.Background(), "some-saga-id", "some-subrequest-id", cmd)
+
+	assert.NoError(t, err)
+
+	mock.AssertExpectations(t)
+}
+
+func Test_Mock_MarkSubRequestAsAborted(t *testing.T) {
+	mock := new(Mock)
+
+	reason := json.RawMessage(`{"reason": "some-error"}`)
+
+	mock.On("MarkSubRequestAsAborted", "some-saga-id", "some-subrequest-id", reason).Once().Return(nil)
+
+	err := mock.MarkSubRequestAsAborted(context.Background(), "some-saga-id", "some-subrequest-id", reason)
 
 	assert.NoError(t, err)
 

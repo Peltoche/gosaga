@@ -18,6 +18,7 @@ type Journal interface {
 	DeleteSaga(ctx context.Context, sagaID string)
 	MarkSubRequestAsRunning(ctx context.Context, sagaID string, subRequestID string, cmd json.RawMessage) error
 	MarkSubRequestAsDone(ctx context.Context, sagaID string, subRequestID string, result json.RawMessage) error
+	MarkSubRequestAsAborted(ctx context.Context, sagaID string, subRequestID string, reason json.RawMessage) error
 	GetSagaStatus(sagaID string) string
 	GetSagaLastEventLog(sagaID string) (string, string, json.RawMessage)
 }
@@ -124,11 +125,10 @@ func (t *SEC) execNextSubRequestAction(ctx context.Context, sagaID string) error
 			return fmt.Errorf("failed to create the saga: %s", err)
 		}
 	} else {
-		panic("should abort")
-		//err = t.Journal.MarkSubRequestAsDone(ctx, sagaID, subState.SubRequestID, subState.Arg)
-		//if err != nil {
-		//return fmt.Errorf("failed to create the saga: %s", err)
-		//}
+		err = t.journal.MarkSubRequestAsAborted(ctx, sagaID, subReq.SubRequestID, result.Arg())
+		if err != nil {
+			return fmt.Errorf("failed to create the saga: %s", err)
+		}
 	}
 
 	return nil

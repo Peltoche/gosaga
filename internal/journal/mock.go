@@ -29,6 +29,11 @@ func (t *Mock) MarkSubRequestAsDone(ctx context.Context, sagaID string, subReque
 	return t.Called(sagaID, subRequestID, result).Error(0)
 }
 
+// MarkSubRequestAsAborted mock.
+func (t *Mock) MarkSubRequestAsAborted(ctx context.Context, sagaID string, subRequestID string, reason json.RawMessage) error {
+	return t.Called(sagaID, subRequestID, reason).Error(0)
+}
+
 // MarkSagaAsDone mock.
 func (t *Mock) MarkSagaAsDone(ctx context.Context, sagaID string) error {
 	return t.Called(sagaID).Error(0)
