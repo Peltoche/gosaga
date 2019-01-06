@@ -3,6 +3,7 @@ package gosaga
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"log"
 
@@ -40,11 +41,11 @@ func Example() {
 	// delete saga
 }
 
-func debitAction(ctx context.Context, cmd json.RawMessage) *Result {
+func debitAction(ctx context.Context, cmd json.RawMessage) Result {
 	var req request
 	err := json.Unmarshal(cmd, &req)
 	if err != nil {
-		return &Result{Status: "failure", Arg: json.RawMessage(err.Error())}
+		return Failure(err)
 	}
 
 	switch req.Debiter {
@@ -55,17 +56,17 @@ func debitAction(ctx context.Context, cmd json.RawMessage) *Result {
 		log.Printf("Bar %v -> %v\n", bar, bar-req.Amount)
 		bar = bar - req.Amount
 	default:
-		return &Result{Status: "failure", Arg: json.RawMessage("unknown target")}
+		return Failure(errors.New("unknown target"))
 	}
 
-	return &Result{Status: "success", Arg: cmd}
+	return Success(cmd)
 }
 
-func debitCompensation(ctx context.Context, cmd json.RawMessage) *Result {
+func debitCompensation(ctx context.Context, cmd json.RawMessage) Result {
 	var req request
 	err := json.Unmarshal(cmd, &req)
 	if err != nil {
-		return &Result{Status: "failure", Arg: json.RawMessage(err.Error())}
+		return Failure(err)
 	}
 
 	switch req.Debiter {
@@ -76,17 +77,17 @@ func debitCompensation(ctx context.Context, cmd json.RawMessage) *Result {
 		log.Printf("Revert Bar %v -> %v\n", bar, bar+req.Amount)
 		bar = bar + req.Amount
 	default:
-		return &Result{Status: "failure", Arg: json.RawMessage("unknown target")}
+		return Failure(errors.New("unknown target"))
 	}
 
-	return &Result{Status: "success", Arg: cmd}
+	return Success(cmd)
 }
 
-func creditAction(ctx context.Context, cmd json.RawMessage) *Result {
+func creditAction(ctx context.Context, cmd json.RawMessage) Result {
 	var req request
 	err := json.Unmarshal(cmd, &req)
 	if err != nil {
-		return &Result{Status: "failure", Arg: json.RawMessage(err.Error())}
+		return Failure(err)
 	}
 
 	switch req.Crediter {
@@ -97,17 +98,17 @@ func creditAction(ctx context.Context, cmd json.RawMessage) *Result {
 		log.Printf("Bar %v -> %v\n", bar, bar+req.Amount)
 		bar = bar + req.Amount
 	default:
-		return &Result{Status: "failure", Arg: json.RawMessage("unknown target")}
+		return Failure(errors.New("unknown target"))
 	}
 
-	return &Result{Status: "success", Arg: cmd}
+	return Success(cmd)
 }
 
-func creditCompensation(ctx context.Context, cmd json.RawMessage) *Result {
+func creditCompensation(ctx context.Context, cmd json.RawMessage) Result {
 	var req request
 	err := json.Unmarshal(cmd, &req)
 	if err != nil {
-		return &Result{Status: "failure", Arg: json.RawMessage(err.Error())}
+		return Failure(err)
 	}
 
 	switch req.Crediter {
@@ -118,8 +119,8 @@ func creditCompensation(ctx context.Context, cmd json.RawMessage) *Result {
 		log.Printf("Revert Bar %v -> %v\n", bar, bar+req.Amount)
 		bar = bar - req.Amount
 	default:
-		return &Result{Status: "failure", Arg: json.RawMessage("unknown target")}
+		return Failure(errors.New("unknown target"))
 	}
 
-	return &Result{Status: "success", Arg: cmd}
+	return Success(cmd)
 }

@@ -6,19 +6,16 @@ import (
 	"fmt"
 )
 
-// Result of a Sub-Request.
-//
-// It contains the status and the command for the next Sub-Request.
-type Result struct {
-	Status string
-	Arg    json.RawMessage
+// Result returned at the end of an Action.
+type Result interface {
+	IsSuccess() bool
 }
 
 // Action used for a SubRequest Action or Compensation.
-type Action func(ctx context.Context, cmd json.RawMessage) *Result
+type Action func(ctx context.Context, cmd json.RawMessage) Result
 
 // SubRequestDef is the definition for an ACID Sub-Request.
-type SubRequestDef struct {
+type subRequestDef struct {
 	SubRequestID string
 
 	// Action executed by the Sub-Request.
@@ -31,17 +28,17 @@ type SubRequestDef struct {
 }
 
 // SubRequestDefs is the ordered collection of SubRequest.
-type subRequestDefs []SubRequestDef
+type subRequestDefs []subRequestDef
 
 // GetFirstSubRequest return the first Sub-Request to execute.
-func (t subRequestDefs) GetFirstSubRequest() *SubRequestDef {
+func (t subRequestDefs) GetFirstSubRequest() *subRequestDef {
 	return &t[0]
 }
 
 // GetSubRequestAfte return the next Sub-Request to execute after the given subRequestID.
 //
 // If there is no more Sub-Request to execute, return nil
-func (t subRequestDefs) GetSubRequestAfter(subRequestID string) (*SubRequestDef, error) {
+func (t subRequestDefs) GetSubRequestAfter(subRequestID string) (*subRequestDef, error) {
 	if subRequestID == "_init" {
 		return &t[0], nil
 	}

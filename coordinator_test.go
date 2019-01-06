@@ -18,25 +18,25 @@ type SubRequestMock struct {
 }
 
 // Action Sub-Request mock.
-func (t *SubRequestMock) Action(ctx context.Context, cmd json.RawMessage) *Result {
+func (t *SubRequestMock) Action(ctx context.Context, cmd json.RawMessage) Result {
 	args := t.Called(cmd)
 
 	if args.Get(0) == nil {
 		return nil
 	}
 
-	return args.Get(0).(*Result)
+	return args.Get(0).(Result)
 }
 
 // Compensation Sub-Request mock.
-func (t *SubRequestMock) Compensation(ctx context.Context, cmd json.RawMessage) *Result {
+func (t *SubRequestMock) Compensation(ctx context.Context, cmd json.RawMessage) Result {
 	args := t.Called(cmd)
 
 	if args.Get(0) == nil {
 		return nil
 	}
 
-	return args.Get(0).(*Result)
+	return args.Get(0).(Result)
 }
 
 func Test_SEC_StartSaga_success(t *testing.T) {
@@ -44,7 +44,7 @@ func Test_SEC_StartSaga_success(t *testing.T) {
 
 	journal := new(journal.Mock)
 	subRequest := new(SubRequestMock)
-	scheduler := &SEC{subRequestDefs: []SubRequestDef{}, journal: journal}
+	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
 	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
 
 	// Create and save the Saga
@@ -59,7 +59,7 @@ func Test_SEC_StartSaga_success(t *testing.T) {
 	journal.On("GetSagaStatus", "some-saga-id").Return("running").Once()
 	journal.On("GetSagaLastEventLog", "some-saga-id").Return("_init", "done", cmd).Once()
 	journal.On("MarkSubRequestAsRunning", "some-saga-id", "step1", cmd).Return(nil).Once()
-	subRequest.On("Action", cmd).Return(&Result{Status: "success", Arg: cmd}).Once()
+	subRequest.On("Action", cmd).Return(Success(cmd)).Once()
 	journal.On("MarkSubRequestAsDone", "some-saga-id", "step1", cmd).Return(nil).Once()
 
 	// 2 - Mark the saga as "done"
@@ -83,7 +83,7 @@ func Test_SEC_StartSaga_with_journal_CreateNewSaga_error_should_fail(t *testing.
 
 	journal := new(journal.Mock)
 	subRequest := new(SubRequestMock)
-	scheduler := &SEC{subRequestDefs: []SubRequestDef{}, journal: journal}
+	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
 	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
 
 	// Create and save the Saga
@@ -99,7 +99,7 @@ func Test_SEC_StartSaga_with_journal_CreateNewSaga_error_should_fail(t *testing.
 func Test_SEC_RunSaga_with_an_invalid_status_should_fail(t *testing.T) {
 	journal := new(journal.Mock)
 	subRequest := new(SubRequestMock)
-	scheduler := &SEC{subRequestDefs: []SubRequestDef{}, journal: journal}
+	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
 	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
 
 	// GetSagaStatus twice, one time for the switch, one time for the error message.

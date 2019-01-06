@@ -36,14 +36,14 @@ type SEC struct {
 // NewSEC instantiate a new Saga Execution Coordinator (SEC).
 func NewSEC(storage journal.Storage) *SEC {
 	return &SEC{
-		subRequestDefs: []SubRequestDef{},
+		subRequestDefs: []subRequestDef{},
 		journal:        journal.New(storage),
 	}
 }
 
 // AppendNewSubRequest append a new SubRequest to the Saga.
 func (t *SEC) AppendNewSubRequest(name string, action Action, compensation Action) *SEC {
-	t.subRequestDefs = append(t.subRequestDefs, SubRequestDef{
+	t.subRequestDefs = append(t.subRequestDefs, subRequestDef{
 		SubRequestID: name,
 		Action:       action,
 		Compensation: compensation,
@@ -88,11 +88,6 @@ func (t *SEC) runSaga(ctx context.Context, sagaID string) error {
 }
 
 func (t *SEC) execNextSubRequestAction(ctx context.Context, sagaID string) error {
-	var (
-		subReq *SubRequestDef
-		err    error
-	)
-
 	step, state, arg := t.journal.GetSagaLastEventLog(sagaID)
 	if state == "running" {
 		// The previous subRequest is not finished, abort.
@@ -101,7 +96,7 @@ func (t *SEC) execNextSubRequestAction(ctx context.Context, sagaID string) error
 	fmt.Printf("step: %s / %s\n", step, state)
 
 	// Select the next subRequest.
-	subReq, err = t.subRequestDefs.GetSubRequestAfter(step)
+	subReq, err := t.subRequestDefs.GetSubRequestAfter(step)
 	if err != nil {
 		return fmt.Errorf("failed to select the next sub-request: %s", err)
 	}
@@ -123,7 +118,7 @@ func (t *SEC) execNextSubRequestAction(ctx context.Context, sagaID string) error
 	}
 
 	result := subReq.Action(ctx, arg)
-	if result.Status == "success" {
+	if result.IsSuccess() {
 		err = t.journal.MarkSubRequestAsDone(ctx, sagaID, subReq.SubRequestID, arg)
 		if err != nil {
 			return fmt.Errorf("failed to create the saga: %s", err)
