@@ -35,10 +35,10 @@ func New(storage Storage) *Journal {
 }
 
 // CreateNewSaga mark the given Saga a started.
-func (t *Journal) CreateNewSaga(ctx context.Context, cmd json.RawMessage) (string, error) {
+func (t *Journal) CreateNewSaga(ctx context.Context, sagaCtx json.RawMessage) (string, error) {
 	sagaID := t.generateID()
 
-	eventLog := model.EventLog{SagaID: sagaID, Step: "_init", State: "done", Arg: cmd}
+	eventLog := model.EventLog{SagaID: sagaID, Step: "_init", State: "done", Context: sagaCtx}
 	err := t.storage.SaveEventLog(ctx, &eventLog)
 	if err != nil {
 		return "", fmt.Errorf("failed to save into the storage: %s", err)
@@ -54,13 +54,13 @@ func (t *Journal) CreateNewSaga(ctx context.Context, cmd json.RawMessage) (strin
 }
 
 // MarkSubRequestAsRunning make the given Sub-Request as started for the given Saga.
-func (t *Journal) MarkSubRequestAsRunning(ctx context.Context, sagaID string, subRequestID string, cmd json.RawMessage) error {
+func (t *Journal) MarkSubRequestAsRunning(ctx context.Context, sagaID string, subRequestID string, sagaCtx json.RawMessage) error {
 	saga, ok := t.journal[sagaID]
 	if !ok {
 		return fmt.Errorf("saga %q not found into the journal", sagaID)
 	}
 
-	eventLog := model.EventLog{SagaID: sagaID, Step: subRequestID, State: "running", Arg: cmd}
+	eventLog := model.EventLog{SagaID: sagaID, Step: subRequestID, State: "running", Context: sagaCtx}
 	err := t.storage.SaveEventLog(ctx, &eventLog)
 	if err != nil {
 		return fmt.Errorf("failed to save into the storage: %s", err)
@@ -74,7 +74,7 @@ func (t *Journal) MarkSubRequestAsRunning(ctx context.Context, sagaID string, su
 }
 
 // MarkSubRequestAsDone make the given Sub-Request as started for the given Saga.
-func (t *Journal) MarkSubRequestAsDone(ctx context.Context, sagaID string, subRequestID string, result json.RawMessage) error {
+func (t *Journal) MarkSubRequestAsDone(ctx context.Context, sagaID string, subRequestID string, sagaCtx json.RawMessage) error {
 	saga, ok := t.journal[sagaID]
 	if !ok {
 		return fmt.Errorf("saga %q not found into the journal", sagaID)
@@ -95,7 +95,7 @@ func (t *Journal) MarkSubRequestAsDone(ctx context.Context, sagaID string, subRe
 		return fmt.Errorf("expected current state to be \"running\", have %q", subRequestCurrentStep)
 	}
 
-	eventLog := model.EventLog{SagaID: sagaID, Step: subRequestID, State: "done", Arg: result}
+	eventLog := model.EventLog{SagaID: sagaID, Step: subRequestID, State: "done", Context: sagaCtx}
 	err := t.storage.SaveEventLog(ctx, &eventLog)
 	if err != nil {
 		return fmt.Errorf("failed to save into the storage: %s", err)
@@ -109,7 +109,7 @@ func (t *Journal) MarkSubRequestAsDone(ctx context.Context, sagaID string, subRe
 }
 
 // MarkSubRequestAsAborted make the given Sub-Request and saga as aborted for the given Saga.
-func (t *Journal) MarkSubRequestAsAborted(ctx context.Context, sagaID string, subRequestID string, reason json.RawMessage) error {
+func (t *Journal) MarkSubRequestAsAborted(ctx context.Context, sagaID string, subRequestID string, sagaCtx json.RawMessage) error {
 	saga, ok := t.journal[sagaID]
 	if !ok {
 		return fmt.Errorf("saga %q not found into the journal", sagaID)
@@ -130,7 +130,7 @@ func (t *Journal) MarkSubRequestAsAborted(ctx context.Context, sagaID string, su
 		return fmt.Errorf("expected current state to be \"running\", have %q", subRequestCurrentStep)
 	}
 
-	eventLog := model.EventLog{SagaID: sagaID, Step: subRequestID, State: "aborted", Arg: reason}
+	eventLog := model.EventLog{SagaID: sagaID, Step: subRequestID, State: "aborted", Context: sagaCtx}
 	err := t.storage.SaveEventLog(ctx, &eventLog)
 	if err != nil {
 		return fmt.Errorf("failed to save into the storage: %s", err)
@@ -194,5 +194,5 @@ func (t *Journal) GetSagaLastEventLog(sagaID string) (string, string, json.RawMe
 	// Retrieve the last save State
 	eventLog := saga.EventLogs[len(saga.EventLogs)-1]
 
-	return eventLog.Step, eventLog.State, eventLog.Arg
+	return eventLog.Step, eventLog.State, eventLog.Context
 }

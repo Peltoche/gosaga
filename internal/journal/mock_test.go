@@ -11,11 +11,11 @@ import (
 func Test_Mock_CreateNewSaga(t *testing.T) {
 	mock := new(Mock)
 
-	cmd := json.RawMessage(`{"key": "value"}`)
+	sagaCtx := json.RawMessage(`{"key": "value"}`)
 
-	mock.On("CreateNewSaga", cmd).Once().Return("some-saga-id", nil)
+	mock.On("CreateNewSaga", sagaCtx).Once().Return("some-saga-id", nil)
 
-	sagaID, err := mock.CreateNewSaga(context.Background(), cmd)
+	sagaID, err := mock.CreateNewSaga(context.Background(), sagaCtx)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "some-saga-id", sagaID)
@@ -40,11 +40,11 @@ func Test_Mock_MarkSubRequestAsRunning(t *testing.T) {
 func Test_Mock_MarkSubRequestAsDone(t *testing.T) {
 	mock := new(Mock)
 
-	cmd := json.RawMessage(`{"key": "value"}`)
+	sagaCtx := json.RawMessage(`{"key": "value"}`)
 
-	mock.On("MarkSubRequestAsDone", "some-saga-id", "some-subrequest-id", cmd).Once().Return(nil)
+	mock.On("MarkSubRequestAsDone", "some-saga-id", "some-subrequest-id", sagaCtx).Once().Return(nil)
 
-	err := mock.MarkSubRequestAsDone(context.Background(), "some-saga-id", "some-subrequest-id", cmd)
+	err := mock.MarkSubRequestAsDone(context.Background(), "some-saga-id", "some-subrequest-id", sagaCtx)
 
 	assert.NoError(t, err)
 
@@ -54,11 +54,11 @@ func Test_Mock_MarkSubRequestAsDone(t *testing.T) {
 func Test_Mock_MarkSubRequestAsAborted(t *testing.T) {
 	mock := new(Mock)
 
-	reason := json.RawMessage(`{"reason": "some-error"}`)
+	sagaCtx := json.RawMessage(`{"reason": "some-error"}`)
 
-	mock.On("MarkSubRequestAsAborted", "some-saga-id", "some-subrequest-id", reason).Once().Return(nil)
+	mock.On("MarkSubRequestAsAborted", "some-saga-id", "some-subrequest-id", sagaCtx).Once().Return(nil)
 
-	err := mock.MarkSubRequestAsAborted(context.Background(), "some-saga-id", "some-subrequest-id", reason)
+	err := mock.MarkSubRequestAsAborted(context.Background(), "some-saga-id", "some-subrequest-id", sagaCtx)
 
 	assert.NoError(t, err)
 
@@ -92,15 +92,15 @@ func Test_Mock_GetSagaStatus(t *testing.T) {
 func Test_Mock_GetSagaLastEventLog(t *testing.T) {
 	mock := new(Mock)
 
-	cmd := json.RawMessage(`{"key": "value"}`)
+	sagaCtx := json.RawMessage(`{"key": "value"}`)
 
-	mock.On("GetSagaLastEventLog", "some-saga-id").Once().Return("some-step", "some-state", cmd)
+	mock.On("GetSagaLastEventLog", "some-saga-id").Once().Return("some-step", "some-state", sagaCtx)
 
 	step, state, res := mock.GetSagaLastEventLog("some-saga-id")
 
 	assert.Equal(t, "some-step", step)
 	assert.Equal(t, "some-state", state)
-	assert.EqualValues(t, cmd, res)
+	assert.EqualValues(t, sagaCtx, res)
 
 	mock.AssertExpectations(t)
 }

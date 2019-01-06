@@ -18,8 +18,8 @@ type SubRequestMock struct {
 }
 
 // Action Sub-Request mock.
-func (t *SubRequestMock) Action(ctx context.Context, cmd json.RawMessage) Result {
-	args := t.Called(cmd)
+func (t *SubRequestMock) Action(ctx context.Context, sagaCtx json.RawMessage) Result {
+	args := t.Called(sagaCtx)
 
 	if args.Get(0) == nil {
 		return nil
@@ -29,8 +29,8 @@ func (t *SubRequestMock) Action(ctx context.Context, cmd json.RawMessage) Result
 }
 
 // Compensation Sub-Request mock.
-func (t *SubRequestMock) Compensation(ctx context.Context, cmd json.RawMessage) Result {
-	args := t.Called(cmd)
+func (t *SubRequestMock) Compensation(ctx context.Context, sagaCtx json.RawMessage) Result {
+	args := t.Called(sagaCtx)
 
 	if args.Get(0) == nil {
 		return nil
@@ -40,7 +40,7 @@ func (t *SubRequestMock) Compensation(ctx context.Context, cmd json.RawMessage) 
 }
 
 func Test_SEC_StartSaga_success(t *testing.T) {
-	cmd := json.RawMessage(`{"key": "value"}`)
+	sagaCtx := json.RawMessage(`{"key": "value"}`)
 
 	journal := new(journal.Mock)
 	subRequest := new(SubRequestMock)
@@ -48,7 +48,7 @@ func Test_SEC_StartSaga_success(t *testing.T) {
 	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
 
 	// Create and save the Saga
-	journal.On("CreateNewSaga", cmd).Return("some-saga-id", nil).Once()
+	journal.On("CreateNewSaga", sagaCtx).Return("some-saga-id", nil).Once()
 
 	// There is 3 loops:
 	// 1 - Execute "step1"
@@ -57,21 +57,21 @@ func Test_SEC_StartSaga_success(t *testing.T) {
 
 	// 1 - Execute the "step1" SubRequest
 	journal.On("GetSagaStatus", "some-saga-id").Return("running").Once()
-	journal.On("GetSagaLastEventLog", "some-saga-id").Return("_init", "done", cmd).Once()
-	journal.On("MarkSubRequestAsRunning", "some-saga-id", "step1", cmd).Return(nil).Once()
-	subRequest.On("Action", cmd).Return(Success(cmd)).Once()
-	journal.On("MarkSubRequestAsDone", "some-saga-id", "step1", cmd).Return(nil).Once()
+	journal.On("GetSagaLastEventLog", "some-saga-id").Return("_init", "done", sagaCtx).Once()
+	journal.On("MarkSubRequestAsRunning", "some-saga-id", "step1", sagaCtx).Return(nil).Once()
+	subRequest.On("Action", sagaCtx).Return(Success(sagaCtx)).Once()
+	journal.On("MarkSubRequestAsDone", "some-saga-id", "step1", sagaCtx).Return(nil).Once()
 
 	// 2 - Mark the saga as "done"
 	journal.On("GetSagaStatus", "some-saga-id").Return("running").Once()
-	journal.On("GetSagaLastEventLog", "some-saga-id").Return("step1", "done", cmd).Once()
+	journal.On("GetSagaLastEventLog", "some-saga-id").Return("step1", "done", sagaCtx).Once()
 	journal.On("MarkSagaAsDone", "some-saga-id").Return(nil).Once()
 
 	// 3 - Delete the saga
 	journal.On("GetSagaStatus", "some-saga-id").Return("done").Once()
 	journal.On("DeleteSaga", "some-saga-id").Once()
 
-	err := scheduler.StartSaga(context.Background(), cmd)
+	err := scheduler.StartSaga(context.Background(), sagaCtx)
 	assert.NoError(t, err)
 
 	journal.AssertExpectations(t)
@@ -79,7 +79,7 @@ func Test_SEC_StartSaga_success(t *testing.T) {
 }
 
 func Test_SEC_StartSaga_with_journal_CreateNewSaga_error_should_fail(t *testing.T) {
-	cmd := json.RawMessage(`{"key": "value"}`)
+	sagaCtx := json.RawMessage(`{"key": "value"}`)
 
 	journal := new(journal.Mock)
 	subRequest := new(SubRequestMock)
@@ -87,9 +87,9 @@ func Test_SEC_StartSaga_with_journal_CreateNewSaga_error_should_fail(t *testing.
 	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
 
 	// Create and save the Saga
-	journal.On("CreateNewSaga", cmd).Return("", errors.New("some-error")).Once()
+	journal.On("CreateNewSaga", sagaCtx).Return("", errors.New("some-error")).Once()
 
-	err := scheduler.StartSaga(context.Background(), cmd)
+	err := scheduler.StartSaga(context.Background(), sagaCtx)
 	assert.EqualError(t, err, "failed to create a new saga: some-error")
 
 	journal.AssertExpectations(t)

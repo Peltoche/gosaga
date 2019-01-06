@@ -14,9 +14,9 @@ func Test_Memory_SaveEventLog_should_success(t *testing.T) {
 	memory := NewMemory()
 
 	event := &model.EventLog{
-		SagaID: "some-id",
-		State:  "some-state",
-		Arg:    json.RawMessage(`{"key": "value"}`),
+		SagaID:  "some-id",
+		State:   "some-state",
+		Context: json.RawMessage(`{"key": "value"}`),
 	}
 
 	err := memory.SaveEventLog(context.Background(), event)

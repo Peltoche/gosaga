@@ -2,7 +2,6 @@ package gosaga
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
 // SuccessResponse response returned after a successful Action.
@@ -17,15 +16,15 @@ import (
 //   Componsensation method will be called but the result parameter will not be
 //	 used.
 type SuccessResponse struct {
-	status string
-	result json.RawMessage
+	status  string
+	context json.RawMessage
 }
 
 // IsSuccess return if the action have be successful.
 func (t *SuccessResponse) IsSuccess() bool { return true }
 
-// Arg return the argument for the next SubRequest.
-func (t *SuccessResponse) Arg() json.RawMessage { return t.result }
+// Context return
+func (t *SuccessResponse) Context() json.RawMessage { return t.context }
 
 // FailureResponse response returned after a errored Action.
 //
@@ -36,28 +35,30 @@ func (t *SuccessResponse) Arg() json.RawMessage { return t.result }
 // - When it is used as a result for a Compensation, it will be only logged
 //	 and the Compensation method will retry.
 type FailureResponse struct {
-	status string
-	err    error
+	status  string
+	context json.RawMessage
+	err     error
 }
 
 // IsSuccess return if the action have be successful.
 func (t *FailureResponse) IsSuccess() bool { return false }
 
-// Arg return the error in a json format.
-func (t *FailureResponse) Arg() json.RawMessage { return json.RawMessage(fmt.Sprintf("%q", t.err)) }
+// Context return
+func (t *FailureResponse) Context() json.RawMessage { return t.context }
 
 // Success generate a Success response.
-func Success(result json.RawMessage) *SuccessResponse {
+func Success(context json.RawMessage) *SuccessResponse {
 	return &SuccessResponse{
-		status: "success",
-		result: result,
+		status:  "success",
+		context: context,
 	}
 }
 
 // Failure return a failure response with the given error.
-func Failure(err error) *FailureResponse {
+func Failure(err error, context json.RawMessage) *FailureResponse {
 	return &FailureResponse{
-		status: "failure",
-		err:    err,
+		status:  "failure",
+		context: context,
+		err:     err,
 	}
 }

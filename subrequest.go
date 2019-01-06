@@ -9,7 +9,7 @@ import (
 // Result returned at the end of an Action.
 type Result interface {
 	IsSuccess() bool
-	Arg() json.RawMessage
+	Context() json.RawMessage
 }
 
 // Action used for a SubRequest Action or Compensation.
@@ -36,7 +36,20 @@ func (t subRequestDefs) GetFirstSubRequest() *subRequestDef {
 	return &t[0]
 }
 
-// GetSubRequestAfte return the next Sub-Request to execute after the given subRequestID.
+// GetSubRequest return the SubRequest Definitier matching the subRequestID.
+//
+// If there is no matching SubRequest, return nil
+func (t subRequestDefs) GetSubRequestDef(subRequestID string) *subRequestDef {
+	for _, subReq := range t {
+		if subReq.SubRequestID == subRequestID {
+			return &subReq
+		}
+	}
+
+	return nil
+}
+
+// GetSubRequestAfter return the next Sub-Request to execute after the given subRequestID.
 //
 // If there is no more Sub-Request to execute, return nil
 func (t subRequestDefs) GetSubRequestAfter(subRequestID string) (*subRequestDef, error) {
@@ -62,4 +75,19 @@ func (t subRequestDefs) GetSubRequestAfter(subRequestID string) (*subRequestDef,
 	nextSubReq := t[nextSubReqIDX]
 
 	return &nextSubReq, nil
+}
+
+// GetSubRequestBefore return
+func (t subRequestDefs) GetSubRequestBefore(subRequestID string) *subRequestDef {
+	for idx, subReq := range t {
+		if subReq.SubRequestID == subRequestID {
+			if idx == 0 {
+				return nil
+			}
+
+			return &t[idx-1]
+		}
+	}
+
+	return nil
 }

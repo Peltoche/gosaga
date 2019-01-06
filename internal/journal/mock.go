@@ -13,25 +13,25 @@ type Mock struct {
 }
 
 // CreateNewSaga mock.
-func (t *Mock) CreateNewSaga(ctx context.Context, cmd json.RawMessage) (string, error) {
-	args := t.Called(cmd)
+func (t *Mock) CreateNewSaga(ctx context.Context, sagaCtx json.RawMessage) (string, error) {
+	args := t.Called(sagaCtx)
 
 	return args.String(0), args.Error(1)
 }
 
 // MarkSubRequestAsRunning mock.
-func (t *Mock) MarkSubRequestAsRunning(ctx context.Context, sagaID string, subRequestID string, cmd json.RawMessage) error {
-	return t.Called(sagaID, subRequestID, cmd).Error(0)
+func (t *Mock) MarkSubRequestAsRunning(ctx context.Context, sagaID string, subRequestID string, sagaCtx json.RawMessage) error {
+	return t.Called(sagaID, subRequestID, sagaCtx).Error(0)
 }
 
 // MarkSubRequestAsDone mock.
-func (t *Mock) MarkSubRequestAsDone(ctx context.Context, sagaID string, subRequestID string, result json.RawMessage) error {
-	return t.Called(sagaID, subRequestID, result).Error(0)
+func (t *Mock) MarkSubRequestAsDone(ctx context.Context, sagaID string, subRequestID string, sagaCtx json.RawMessage) error {
+	return t.Called(sagaID, subRequestID, sagaCtx).Error(0)
 }
 
 // MarkSubRequestAsAborted mock.
-func (t *Mock) MarkSubRequestAsAborted(ctx context.Context, sagaID string, subRequestID string, reason json.RawMessage) error {
-	return t.Called(sagaID, subRequestID, reason).Error(0)
+func (t *Mock) MarkSubRequestAsAborted(ctx context.Context, sagaID string, subRequestID string, sagaCtx json.RawMessage) error {
+	return t.Called(sagaID, subRequestID, sagaCtx).Error(0)
 }
 
 // MarkSagaAsDone mock.

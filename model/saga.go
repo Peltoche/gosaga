@@ -13,8 +13,8 @@ type Saga struct {
 
 // EventLog log a change into a Saga state.
 type EventLog struct {
-	SagaID string
-	Step   string
-	State  string
-	Arg    json.RawMessage
+	SagaID  string
+	Step    string
+	State   string
+	Context json.RawMessage
 }
