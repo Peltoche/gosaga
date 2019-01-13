@@ -109,7 +109,7 @@ func (t *SEC) execNextSubRequestAction(ctx context.Context, sagaID string) error
 		fmt.Println("mark saga as done")
 		err = t.journal.MarkSagaAsDone(ctx, sagaID)
 		if err != nil {
-			return fmt.Errorf("failed to create the saga: %s", err)
+			return fmt.Errorf("failed to mark the saga as done: %s", err)
 		}
 
 		return nil
@@ -118,20 +118,20 @@ func (t *SEC) execNextSubRequestAction(ctx context.Context, sagaID string) error
 	fmt.Printf("exec: %s\n", subReq.SubRequestID)
 	err = t.journal.MarkSubRequestAsRunning(ctx, sagaID, subReq.SubRequestID, arg)
 	if err != nil {
-		return fmt.Errorf("failed to create the saga: %s", err)
+		return fmt.Errorf("failed to mark the subrequest %q for saga %q as running: %s", subReq.SubRequestID, sagaID, err)
 	}
 
 	result := subReq.Action(ctx, arg)
 	if result.IsSuccess() {
 		err = t.journal.MarkSubRequestAsDone(ctx, sagaID, subReq.SubRequestID, result.Context())
 		if err != nil {
-			return fmt.Errorf("failed to create the saga: %s", err)
+			return fmt.Errorf("failed to mark the subrequest %q for saga %q as done: %s", subReq.SubRequestID, sagaID, err)
 		}
 	} else {
 		fmt.Printf("failed %q\n", step)
 		err = t.journal.MarkSubRequestAsAborted(ctx, sagaID, subReq.SubRequestID, result.Context())
 		if err != nil {
-			return fmt.Errorf("failed to create the saga: %s", err)
+			return fmt.Errorf("failed to mark the subrequest %q for saga %q as aborted: %s", subReq.SubRequestID, sagaID, err)
 		}
 	}
 

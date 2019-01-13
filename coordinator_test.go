@@ -111,3 +111,119 @@ func Test_SEC_RunSaga_with_an_invalid_status_should_fail(t *testing.T) {
 	journal.AssertExpectations(t)
 	subRequest.AssertExpectations(t)
 }
+
+func Test_execNextSubRequestAction_with_a_saga_already_running(t *testing.T) {
+	sagaCtx := json.RawMessage(`{"key": "value"}`)
+
+	journal := new(journal.Mock)
+	subRequest := new(SubRequestMock)
+	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
+	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
+
+	// GetSagaStatus twice, one time for the switch, one time for the error message.
+	journal.On("GetSagaLastEventLog", "some-saga-id").Return("step1", "running", sagaCtx).Once()
+
+	err := scheduler.execNextSubRequestAction(context.Background(), "some-saga-id")
+	assert.EqualError(t, err, "the previous sub-request action/compensation is not finished")
+
+	journal.AssertExpectations(t)
+	subRequest.AssertExpectations(t)
+}
+
+func Test_execNextSubRequestAction_with_an_invalid_subrequest_id(t *testing.T) {
+	sagaCtx := json.RawMessage(`{"key": "value"}`)
+
+	journal := new(journal.Mock)
+	subRequest := new(SubRequestMock)
+	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
+	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
+
+	// GetSagaStatus twice, one time for the switch, one time for the error message.
+	journal.On("GetSagaLastEventLog", "some-saga-id").Return("unknown-subrequest-id", "done", sagaCtx).Once()
+
+	err := scheduler.execNextSubRequestAction(context.Background(), "some-saga-id")
+	assert.EqualError(t, err, `failed to select the next sub-request: unknow sub-request id "unknown-subrequest-id"`)
+
+	journal.AssertExpectations(t)
+	subRequest.AssertExpectations(t)
+}
+
+func Test_execNextSubRequestAction_with_a_MarkSagaAsDone_error(t *testing.T) {
+	sagaCtx := json.RawMessage(`{"key": "value"}`)
+
+	journal := new(journal.Mock)
+	subRequest := new(SubRequestMock)
+	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
+	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
+
+	// GetSagaStatus twice, one time for the switch, one time for the error message.
+	journal.On("GetSagaLastEventLog", "some-saga-id").Return("step1", "done", sagaCtx).Once()
+	journal.On("MarkSagaAsDone", "some-saga-id").Return(errors.New("some-error")).Once()
+
+	err := scheduler.execNextSubRequestAction(context.Background(), "some-saga-id")
+	assert.EqualError(t, err, "failed to mark the saga as done: some-error")
+
+	journal.AssertExpectations(t)
+	subRequest.AssertExpectations(t)
+}
+
+func Test_execNextSubRequestAction_with_a_MarkSubRequestAsRunning_error(t *testing.T) {
+	sagaCtx := json.RawMessage(`{"key": "value"}`)
+
+	journal := new(journal.Mock)
+	subRequest := new(SubRequestMock)
+	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
+	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
+
+	// GetSagaStatus twice, one time for the switch, one time for the error message.
+	journal.On("GetSagaLastEventLog", "some-saga-id").Return("_init", "done", sagaCtx).Once()
+	journal.On("MarkSubRequestAsRunning", "some-saga-id", "step1", sagaCtx).Return(errors.New("some-error")).Once()
+
+	err := scheduler.execNextSubRequestAction(context.Background(), "some-saga-id")
+	assert.EqualError(t, err, "failed to mark the subrequest \"step1\" for saga \"some-saga-id\" as running: some-error")
+
+	journal.AssertExpectations(t)
+	subRequest.AssertExpectations(t)
+}
+
+func Test_execNextSubRequestAction_with_a_MarkSubRequestAsDone_error(t *testing.T) {
+	sagaCtx := json.RawMessage(`{"key": "value"}`)
+
+	journal := new(journal.Mock)
+	subRequest := new(SubRequestMock)
+	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
+	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
+
+	// GetSagaStatus twice, one time for the switch, one time for the error message.
+	journal.On("GetSagaLastEventLog", "some-saga-id").Return("_init", "done", sagaCtx).Once()
+	journal.On("MarkSubRequestAsRunning", "some-saga-id", "step1", sagaCtx).Return(nil).Once()
+	subRequest.On("Action", sagaCtx).Return(Success(sagaCtx)).Once()
+	journal.On("MarkSubRequestAsDone", "some-saga-id", "step1", sagaCtx).Return(errors.New("some-error")).Once()
+
+	err := scheduler.execNextSubRequestAction(context.Background(), "some-saga-id")
+	assert.EqualError(t, err, "failed to mark the subrequest \"step1\" for saga \"some-saga-id\" as done: some-error")
+
+	journal.AssertExpectations(t)
+	subRequest.AssertExpectations(t)
+}
+
+func Test_execNextSubRequestAction_with_a_MarkSubRequestAsAborted_error(t *testing.T) {
+	sagaCtx := json.RawMessage(`{"key": "value"}`)
+
+	journal := new(journal.Mock)
+	subRequest := new(SubRequestMock)
+	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
+	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
+
+	// GetSagaStatus twice, one time for the switch, one time for the error message.
+	journal.On("GetSagaLastEventLog", "some-saga-id").Return("_init", "done", sagaCtx).Once()
+	journal.On("MarkSubRequestAsRunning", "some-saga-id", "step1", sagaCtx).Return(nil).Once()
+	subRequest.On("Action", sagaCtx).Return(Failure(errors.New("some-action-error"), sagaCtx)).Once()
+	journal.On("MarkSubRequestAsAborted", "some-saga-id", "step1", sagaCtx).Return(errors.New("some-error")).Once()
+
+	err := scheduler.execNextSubRequestAction(context.Background(), "some-saga-id")
+	assert.EqualError(t, err, "failed to mark the subrequest \"step1\" for saga \"some-saga-id\" as aborted: some-error")
+
+	journal.AssertExpectations(t)
+	subRequest.AssertExpectations(t)
+}
