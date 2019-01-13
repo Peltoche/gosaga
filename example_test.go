@@ -22,7 +22,7 @@ func Example() {
 	foo = 50
 	bar = 50
 
-	saga := NewSEC(sagaLog).
+	saga := NewSagaExecutionCoordinator(sagaLog).
 		AppendNewSubRequest("debit", debitAction, debitCompensation).
 		AppendNewSubRequest("credit", creditAction, creditCompensation)
 
@@ -45,7 +45,7 @@ func Example_with_abort() {
 	foo = 50
 	bar = 50
 
-	saga := NewSEC(sagaLog).
+	saga := NewSagaExecutionCoordinator(sagaLog).
 		// The credit step will fail and the debit step will be automatically
 		// rollback.
 		AppendNewSubRequest("debit", debitAction, debitCompensation).

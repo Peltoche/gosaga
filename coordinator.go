@@ -34,8 +34,8 @@ type SEC struct {
 	journal        Journal
 }
 
-// NewSEC instantiate a new Saga Execution Coordinator (SEC).
-func NewSEC(storage journal.Storage) *SEC {
+// NewSagaExecutionCoordinator instantiate a new Saga Execution Coordinator (SEC).
+func NewSagaExecutionCoordinator(storage journal.Storage) *SEC {
 	return &SEC{
 		subRequestDefs: []subRequestDef{},
 		journal:        journal.New(storage),
