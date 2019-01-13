@@ -118,3 +118,13 @@ func Test_Mock_GetSagaLastEventLog_with_nil(t *testing.T) {
 
 	mock.AssertExpectations(t)
 }
+
+func Test_Mock_DeleteSaga(t *testing.T) {
+	mock := new(Mock)
+
+	mock.On("DeleteSaga", "some-saga-id").Once().Return()
+
+	mock.DeleteSaga(context.Background(), "some-saga-id")
+
+	mock.AssertExpectations(t)
+}
