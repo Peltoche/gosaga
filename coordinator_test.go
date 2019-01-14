@@ -142,7 +142,7 @@ func Test_execNextSubRequestAction_with_an_invalid_subrequest_id(t *testing.T) {
 	journal.On("GetSagaLastEventLog", "some-saga-id").Return("unknown-subrequest-id", "done", sagaCtx).Once()
 
 	err := scheduler.execNextSubRequestAction(context.Background(), "some-saga-id")
-	assert.EqualError(t, err, `failed to select the next sub-request: unknow sub-request id "unknown-subrequest-id"`)
+	assert.EqualError(t, err, `failed to select the next sub-request: unknown sub-request id "unknown-subrequest-id"`)
 
 	journal.AssertExpectations(t)
 	subRequest.AssertExpectations(t)
@@ -321,6 +321,24 @@ func Test_execNextSubRequestCompensation_with_a_MarkSubRequestAsAborted_error(t 
 
 	err := scheduler.execNextSubRequestCompensation(context.Background(), "some-saga-id")
 	assert.EqualError(t, err, "failed to mark the subrequest \"step1\" for saga \"some-saga-id\" as aborted: some-error")
+
+	journal.AssertExpectations(t)
+	subRequest.AssertExpectations(t)
+}
+
+func Test_execNextSubRequestCompensation_with_an_invalid_subrequest_id(t *testing.T) {
+	sagaCtx := json.RawMessage(`{"key": "value"}`)
+
+	journal := new(journal.Mock)
+	subRequest := new(SubRequestMock)
+	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
+	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
+	scheduler.AppendNewSubRequest("step2", subRequest.Action, subRequest.Compensation)
+
+	journal.On("GetSagaLastEventLog", "some-saga-id").Return("some-invalid-id", "done", sagaCtx).Once()
+
+	err := scheduler.execNextSubRequestCompensation(context.Background(), "some-saga-id")
+	assert.EqualError(t, err, `failed to select the next sub-request: unknown sub-request id "some-invalid-id"`)
 
 	journal.AssertExpectations(t)
 	subRequest.AssertExpectations(t)

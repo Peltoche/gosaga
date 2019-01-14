@@ -151,7 +151,10 @@ func (t *SEC) execNextSubRequestCompensation(ctx context.Context, sagaID string)
 	case "running", "aborted":
 		subReq = t.subRequestDefs.GetSubRequestDef(step)
 	case "done":
-		subReq = t.subRequestDefs.GetSubRequestBefore(step)
+		subReq, err = t.subRequestDefs.GetSubRequestBefore(step)
+		if err != nil {
+			return fmt.Errorf("failed to select the next sub-request: %s", err)
+		}
 	default:
 		return fmt.Errorf("unknown status %q for subrequest %q", state, step)
 	}

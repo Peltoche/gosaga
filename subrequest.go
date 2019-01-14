@@ -65,7 +65,7 @@ func (t subRequestDefs) GetSubRequestAfter(subRequestID string) (*subRequestDef,
 	}
 
 	if nextSubReqIDX == -1 {
-		return nil, fmt.Errorf("unknow sub-request id %q", subRequestID)
+		return nil, fmt.Errorf("unknown sub-request id %q", subRequestID)
 	}
 
 	if nextSubReqIDX >= len(t) {
@@ -78,16 +78,16 @@ func (t subRequestDefs) GetSubRequestAfter(subRequestID string) (*subRequestDef,
 }
 
 // GetSubRequestBefore return
-func (t subRequestDefs) GetSubRequestBefore(subRequestID string) *subRequestDef {
+func (t subRequestDefs) GetSubRequestBefore(subRequestID string) (*subRequestDef, error) {
 	for idx, subReq := range t {
 		if subReq.SubRequestID == subRequestID {
 			if idx == 0 {
-				return nil
+				return nil, nil
 			}
 
-			return &t[idx-1]
+			return &t[idx-1], nil
 		}
 	}
 
-	return nil
+	return nil, fmt.Errorf("unknown sub-request id %q", subRequestID)
 }
