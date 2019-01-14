@@ -70,7 +70,7 @@ func (t *SEC) runSaga(ctx context.Context, sagaID string) error {
 		case "running":
 			err := t.execNextSubRequestAction(ctx, sagaID)
 			if err != nil {
-				panic(err)
+				return err
 			}
 
 		case "done":
@@ -81,7 +81,7 @@ func (t *SEC) runSaga(ctx context.Context, sagaID string) error {
 		case "aborted":
 			err := t.execNextSubRequestCompensation(ctx, sagaID)
 			if err != nil {
-				panic(err)
+				return err
 			}
 
 		default:

@@ -96,7 +96,7 @@ func Test_SEC_StartSaga_with_journal_CreateNewSaga_error_should_fail(t *testing.
 	subRequest.AssertExpectations(t)
 }
 
-func Test_SEC_RunSaga_with_an_invalid_status_should_fail(t *testing.T) {
+func Test_SEC_runSaga_with_an_invalid_status_should_fail(t *testing.T) {
 	journal := new(journal.Mock)
 	subRequest := new(SubRequestMock)
 	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
@@ -107,6 +107,42 @@ func Test_SEC_RunSaga_with_an_invalid_status_should_fail(t *testing.T) {
 
 	err := scheduler.runSaga(context.Background(), "some-saga-id")
 	assert.EqualError(t, err, `unknown status "some-invalid-status" for saga "some-saga-id"`)
+
+	journal.AssertExpectations(t)
+	subRequest.AssertExpectations(t)
+}
+
+func Test_SEC_runSaga_with_an_error_from_execNextSubRequestAction_should_fail(t *testing.T) {
+	sagaCtx := json.RawMessage(`{"key": "value"}`)
+
+	journal := new(journal.Mock)
+	subRequest := new(SubRequestMock)
+	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
+	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
+
+	journal.On("GetSagaStatus", "some-saga-id").Return("running").Once()
+	journal.On("GetSagaLastEventLog", "some-saga-id").Return("_init", "running", sagaCtx).Once()
+
+	err := scheduler.runSaga(context.Background(), "some-saga-id")
+	assert.EqualError(t, err, `the previous sub-request action/compensation is not finished`)
+
+	journal.AssertExpectations(t)
+	subRequest.AssertExpectations(t)
+}
+
+func Test_SEC_runSaga_with_an_error_from_execNextSubRequestCompensation_should_fail(t *testing.T) {
+	sagaCtx := json.RawMessage(`{"key": "value"}`)
+
+	journal := new(journal.Mock)
+	subRequest := new(SubRequestMock)
+	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
+	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
+
+	journal.On("GetSagaStatus", "some-saga-id").Return("aborted").Once()
+	journal.On("GetSagaLastEventLog", "some-saga-id").Return("step1", "invalid-status", sagaCtx).Once()
+
+	err := scheduler.runSaga(context.Background(), "some-saga-id")
+	assert.EqualError(t, err, `unknown status "invalid-status" for subrequest "step1"`)
 
 	journal.AssertExpectations(t)
 	subRequest.AssertExpectations(t)
