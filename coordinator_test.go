@@ -156,7 +156,6 @@ func Test_execNextSubRequestAction_with_a_saga_already_running(t *testing.T) {
 	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
 	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
 
-	// GetSagaStatus twice, one time for the switch, one time for the error message.
 	journal.On("GetSagaLastEventLog", "some-saga-id").Return("step1", "running", sagaCtx).Once()
 
 	err := scheduler.execNextSubRequestAction(context.Background(), "some-saga-id")
@@ -174,7 +173,6 @@ func Test_execNextSubRequestAction_with_an_invalid_subrequest_id(t *testing.T) {
 	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
 	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
 
-	// GetSagaStatus twice, one time for the switch, one time for the error message.
 	journal.On("GetSagaLastEventLog", "some-saga-id").Return("unknown-subrequest-id", "done", sagaCtx).Once()
 
 	err := scheduler.execNextSubRequestAction(context.Background(), "some-saga-id")
@@ -192,7 +190,6 @@ func Test_execNextSubRequestAction_with_a_MarkSagaAsDone_error(t *testing.T) {
 	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
 	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
 
-	// GetSagaStatus twice, one time for the switch, one time for the error message.
 	journal.On("GetSagaLastEventLog", "some-saga-id").Return("step1", "done", sagaCtx).Once()
 	journal.On("MarkSagaAsDone", "some-saga-id").Return(errors.New("some-error")).Once()
 
@@ -211,7 +208,6 @@ func Test_execNextSubRequestAction_with_a_MarkSubRequestAsRunning_error(t *testi
 	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
 	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
 
-	// GetSagaStatus twice, one time for the switch, one time for the error message.
 	journal.On("GetSagaLastEventLog", "some-saga-id").Return("_init", "done", sagaCtx).Once()
 	journal.On("MarkSubRequestAsRunning", "some-saga-id", "step1", sagaCtx).Return(errors.New("some-error")).Once()
 
@@ -230,7 +226,6 @@ func Test_execNextSubRequestAction_with_a_MarkSubRequestAsDone_error(t *testing.
 	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
 	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
 
-	// GetSagaStatus twice, one time for the switch, one time for the error message.
 	journal.On("GetSagaLastEventLog", "some-saga-id").Return("_init", "done", sagaCtx).Once()
 	journal.On("MarkSubRequestAsRunning", "some-saga-id", "step1", sagaCtx).Return(nil).Once()
 	subRequest.On("Action", sagaCtx).Return(Success(sagaCtx)).Once()
@@ -251,7 +246,6 @@ func Test_execNextSubRequestAction_with_a_MarkSubRequestAsAborted_error(t *testi
 	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
 	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
 
-	// GetSagaStatus twice, one time for the switch, one time for the error message.
 	journal.On("GetSagaLastEventLog", "some-saga-id").Return("_init", "done", sagaCtx).Once()
 	journal.On("MarkSubRequestAsRunning", "some-saga-id", "step1", sagaCtx).Return(nil).Once()
 	subRequest.On("Action", sagaCtx).Return(Failure(errors.New("some-action-error"), sagaCtx)).Once()
@@ -289,7 +283,6 @@ func Test_execNextSubRequestCompensation_with_a_MarkSagaAsDone_error(t *testing.
 	scheduler := &SEC{subRequestDefs: []subRequestDef{}, journal: journal}
 	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
 
-	// GetSagaStatus twice, one time for the switch, one time for the error message.
 	journal.On("GetSagaLastEventLog", "some-saga-id").Return("step1", "done", sagaCtx).Once()
 	journal.On("MarkSagaAsDone", "some-saga-id").Return(errors.New("some-error")).Once()
 
@@ -309,7 +302,6 @@ func Test_execNextSubRequestCompensation_with_a_MarkSubRequestAsRunning_error(t 
 	scheduler.AppendNewSubRequest("step1", subRequest.Action, subRequest.Compensation)
 	scheduler.AppendNewSubRequest("step2", subRequest.Action, subRequest.Compensation)
 
-	// GetSagaStatus twice, one time for the switch, one time for the error message.
 	journal.On("GetSagaLastEventLog", "some-saga-id").Return("step2", "done", sagaCtx).Once()
 	journal.On("MarkSubRequestAsRunning", "some-saga-id", "step1", sagaCtx).Return(errors.New("some-error")).Once()
 
